@@ -8,14 +8,17 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <random>
 #define VELOCITY 5
 
 int main() {
-	sf::RenderWindow window(sf::VideoMode({900, 600}), "sfml brutal");
+	float intensifcacao = 1;
+	sf::RenderWindow window(sf::VideoMode({1920, 1080}), "sfml brutal");
 	sf::RectangleShape shape({100, 100});
+	bool enemie_dying = false;
 	sf::CircleShape circle1(10);
 	circle1.setFillColor(sf::Color::Yellow);
-	
+	std::vector<sf::RectangleShape> enemie;
 	sf::Image image1("100x100_true.png");
 	sf::Font fiont("arial.ttf");
 	sf::Text text1(fiont, "hello!\nwasd and press space to shot", 50);
@@ -28,11 +31,22 @@ int main() {
 	window.setIcon(image1);
 	shape.setTexture(&texture1);
 	shape.setPosition({300.f, 200.f});
+
+	std::random_device rd;
+	std::mt19937 gerador(rd());
+	std::uniform_real_distribution<float> distribuicao(0, 400);
+
+	sf::RectangleShape initial_enemy;
+	initial_enemy.setSize({100.f, 100.f});
+	initial_enemy.setFillColor(sf::Color::White);
+	initial_enemy.setPosition({distribuicao(gerador), distribuicao(gerador)});
+	enemie.push_back(initial_enemy);
+
 	while (window.isOpen()) {
 		while (const std::optional event = window.pollEvent()) {
 			if (event->is<sf::Event::Closed>()) {
 				window.close();
-			} // close window
+			} 
 			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) { 
 				if (keyPressed->code == sf::Keyboard::Key::Space) {
 					circle1.setPosition(sf::Vector2f{shape.getPosition().x + 120, (shape.getPosition().y + shape.getSize().y / 2) - 10.f});
@@ -55,6 +69,10 @@ int main() {
 			shape.move(sf::Vector2f(VELOCITY, 0));
 		}
 		
+		std::random_device rd;
+		std::mt19937 gerador(rd());
+		std::uniform_real_distribution<float> distribuicao(0, 1980);
+
 		window.clear(sf::Color::Black);
 		if(showing_my_balls) {
 			if(ballClock.getElapsedTime().asSeconds() < 1.f) {
@@ -63,6 +81,35 @@ int main() {
 			} else {
 				showing_my_balls = false;
 			}
+		}
+		for(size_t num_of_enemy = 0; num_of_enemy < enemie.size(); ++num_of_enemy) {	
+			if (circle1.getGlobalBounds().findIntersection(enemie[num_of_enemy].getGlobalBounds())) {
+				enemie_dying = true;
+			}
+		}
+		for(auto& e : enemie) {
+			e.setSize({100.f, 100.f});
+			e.setFillColor(sf::Color::White);
+		}
+		if(enemie_dying) {
+			sf::RectangleShape new_enemy;
+			new_enemy.setSize({100.f, 100.f});
+			new_enemy.setFillColor(sf::Color::White);
+			new_enemy.setPosition({distribuicao(gerador), distribuicao(gerador)});
+			for (int c = 0; c < 1; c++) {
+				enemie.push_back(new_enemy);
+			}
+		
+			for(size_t num_of_enemy = 0; num_of_enemy < enemie.size(); ++num_of_enemy) {	
+				enemie[num_of_enemy].setPosition({(distribuicao(gerador)), (distribuicao(gerador))});
+				window.draw(enemie[num_of_enemy]);
+			}
+			enemie_dying = false;
+		} else {
+			for(size_t num_of_enemy = 0; num_of_enemy < enemie.size(); ++num_of_enemy) {	
+				window.draw(enemie[num_of_enemy]);
+			}
+				
 		}
 		window.draw(shape);
 		window.draw(text1);
